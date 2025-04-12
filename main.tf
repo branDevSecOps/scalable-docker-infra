@@ -29,6 +29,21 @@ resource "aws_subnet" "public" {
   }
 }
 
+resource "aws_subnet" "public_az2" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.2.0/24"
+  availability_zone       = "us-east-2b"
+  map_public_ip_on_launch = true
+  tags = {
+    Name = "project3-subnet-az2"
+  }
+}
+
+resource "aws_route_table_association" "b" {
+  subnet_id      = aws_subnet.public_az2.id
+  route_table_id = aws_route_table.public.id
+}
+
 resource "aws_internet_gateway" "gw" {
   vpc_id = aws_vpc.main.id
   tags = {
@@ -79,6 +94,41 @@ resource "aws_security_group" "instance_sg" {
   }
 }
 
+resource "aws_lb" "web" {
+  name               = "project3-alb"
+  load_balancer_type = "application"
+  subnets            = [aws_subnet.public.id]
+  security_groups    = [aws_security_group.instance_sg.id]
+}
+
+resource "aws_lb_target_group" "web_tg" {
+  name     = "project3-tg"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = aws_vpc.main.id
+
+  health_check {
+    path                = "/"
+    protocol            = "HTTP"
+    matcher             = "200"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 5
+    unhealthy_threshold = 2
+  }
+}
+
+resource "aws_lb_listener" "web_listener" {
+  load_balancer_arn = aws_lb.web.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.web_tg.arn
+  }
+}
+
 resource "aws_launch_template" "web" {
   name_prefix   = "project3-web-"
   image_id      = data.aws_ami.ubuntu.id
@@ -105,10 +155,14 @@ resource "aws_autoscaling_group" "asg" {
   max_size             = 3
   min_size             = 2
   vpc_zone_identifier  = [aws_subnet.public.id]
+
   launch_template {
     id      = aws_launch_template.web.id
     version = "$Latest"
   }
+
+  target_group_arns = [aws_lb_target_group.web_tg.arn]
+
   tag {
     key                 = "Name"
     value               = "project3-instance"
@@ -130,4 +184,10 @@ data "aws_ami" "ubuntu" {
     values = ["hvm"]
   }
 }
+
+output "load_balancer_dns" {
+  description = "DNS name of the Application Load Balancer"
+  value       = aws_lb.web.dns_name
+}
+
 
