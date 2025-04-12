@@ -9,4 +9,4 @@ systemctl start docker
 
 # Run your Docker container
 # Replace `your-image-name` with the name of your Docker Hub image or local image reference
-docker run -d -p 80:80 nginx:latest
+docker run -d -p 80:80 brandevops/my-awesome-app:latest
