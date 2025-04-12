@@ -39,11 +39,6 @@ resource "aws_subnet" "public_az2" {
   }
 }
 
-resource "aws_route_table_association" "b" {
-  subnet_id      = aws_subnet.public_az2.id
-  route_table_id = aws_route_table.public.id
-}
-
 resource "aws_internet_gateway" "gw" {
   vpc_id = aws_vpc.main.id
   tags = {
@@ -64,6 +59,11 @@ resource "aws_route_table" "public" {
 
 resource "aws_route_table_association" "a" {
   subnet_id      = aws_subnet.public.id
+  route_table_id = aws_route_table.public.id
+}
+
+resource "aws_route_table_association" "b" {
+  subnet_id      = aws_subnet.public_az2.id
   route_table_id = aws_route_table.public.id
 }
 
@@ -101,9 +101,8 @@ resource "aws_lb" "web" {
     aws_subnet.public.id,
     aws_subnet.public_az2.id
   ]
-  security_groups = [aws_security_group.instance_sg.id]
+  security_groups    = [aws_security_group.instance_sg.id]
 }
-
 
 resource "aws_lb_target_group" "web_tg" {
   name     = "project3-tg"
@@ -155,17 +154,18 @@ resource "aws_launch_template" "web" {
 }
 
 resource "aws_autoscaling_group" "asg" {
-  desired_capacity    = 2
-  max_size            = 3
-  min_size            = 2
-  vpc_zone_identifier = [
+  desired_capacity     = 2
+  max_size             = 3
+  min_size             = 2
+  vpc_zone_identifier  = [
     aws_subnet.public.id,
     aws_subnet.public_az2.id
   ]
 
-  ...
-}
-
+  launch_template {
+    id      = aws_launch_template.web.id
+    version = "$Latest"
+  }
 
   target_group_arns = [aws_lb_target_group.web_tg.arn]
 
