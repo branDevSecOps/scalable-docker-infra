@@ -97,9 +97,13 @@ resource "aws_security_group" "instance_sg" {
 resource "aws_lb" "web" {
   name               = "project3-alb"
   load_balancer_type = "application"
-  subnets            = [aws_subnet.public.id]
-  security_groups    = [aws_security_group.instance_sg.id]
+  subnets            = [
+    aws_subnet.public.id,
+    aws_subnet.public_az2.id
+  ]
+  security_groups = [aws_security_group.instance_sg.id]
 }
+
 
 resource "aws_lb_target_group" "web_tg" {
   name     = "project3-tg"
@@ -151,15 +155,17 @@ resource "aws_launch_template" "web" {
 }
 
 resource "aws_autoscaling_group" "asg" {
-  desired_capacity     = 2
-  max_size             = 3
-  min_size             = 2
-  vpc_zone_identifier  = [aws_subnet.public.id]
+  desired_capacity    = 2
+  max_size            = 3
+  min_size            = 2
+  vpc_zone_identifier = [
+    aws_subnet.public.id,
+    aws_subnet.public_az2.id
+  ]
 
-  launch_template {
-    id      = aws_launch_template.web.id
-    version = "$Latest"
-  }
+  ...
+}
+
 
   target_group_arns = [aws_lb_target_group.web_tg.arn]
 
