@@ -5,7 +5,6 @@ terraform {
       version = "~> 5.0"
     }
   }
-
   required_version = ">= 1.3.0"
 }
 
@@ -21,9 +20,9 @@ resource "aws_vpc" "main" {
 }
 
 resource "aws_subnet" "public" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.0.1.0/24"
-  availability_zone = "us-east-2a"
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.1.0/24"
+  availability_zone       = "us-east-2a"
   map_public_ip_on_launch = true
   tags = {
     Name = "project3-subnet"
@@ -132,6 +131,3 @@ data "aws_ami" "ubuntu" {
   }
 }
 
-output "public_ips" {
-  value = aws_autoscaling_group.asg.instances[*].id
-}
